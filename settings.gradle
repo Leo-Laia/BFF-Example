@@ -1,0 +1,4 @@
+rootProject.name = 'bff-token-handler-example'
+
+include 'bff-gateway'
+include 'resource-api'
