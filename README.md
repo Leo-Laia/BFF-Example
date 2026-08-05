@@ -51,7 +51,7 @@ Esse padrão reduz a exposição dos tokens ao JavaScript do navegador. Ele não
 bff-token-handler-example/
 ├── docker-compose.yml
 ├── keycloak/
-│   └── realm-export.json
+│   └── bff-example-realm.json
 ├── bff-gateway/
 │   ├── src/main/java/
 │   └── src/main/resources/
@@ -98,12 +98,13 @@ O Keycloak deve subir por Docker com um realm importado automaticamente.
 Configuração esperada:
 
 - realm `bff-example`;
-- usuário de demonstração;
-- client confidencial `bff-gateway`;
-- Authorization Code;
-- client secret;
+- servidor em `http://localhost:9090`;
+- administração com `admin` / `admin`;
+- usuário de demonstração `aluno` / `alga123`;
+- client confidencial `bff-gateway` com secret `bff-gateway-secret`;
+- fluxo Authorization Code;
 - redirect URI `http://localhost:8080/login/oauth2/code/keycloak`;
-- scopes simples, como `messages:read` e `messages:write`.
+- configuração exclusiva para desenvolvimento local.
 
 ### Resource API
 

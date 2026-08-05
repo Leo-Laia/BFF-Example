@@ -1,0 +1,63 @@
+{
+  "realm": "bff-example",
+  "enabled": true,
+  "displayName": "BFF Token Handler Example",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "clients": [
+    {
+      "clientId": "bff-gateway",
+      "name": "BFF Gateway",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "clientAuthenticatorType": "client-secret",
+      "secret": "bff-gateway-secret",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "http://localhost:8080/login/oauth2/code/keycloak"
+      ],
+      "webOrigins": [
+        "http://localhost:8080"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:8080/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "resource-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "resource-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "aluno",
+      "enabled": true,
+      "firstName": "Aluno",
+      "lastName": "AlgaWorks",
+      "email": "aluno@algaworks.com",
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "alga123",
+          "temporary": false
+        }
+      ]
+    }
+  ]
+}
