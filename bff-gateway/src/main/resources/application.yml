@@ -1,0 +1,43 @@
+server:
+  port: 8080
+  reactive:
+    session:
+      cookie:
+        name: BFFSESSION
+        http-only: true
+        same-site: lax
+
+spring:
+  application:
+    name: bff-gateway
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: bff-gateway
+            client-secret: bff-gateway-secret
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid, profile, email
+        provider:
+          keycloak:
+            authorization-uri: http://localhost:9090/realms/bff-example/protocol/openid-connect/auth
+            token-uri: http://localhost:9090/realms/bff-example/protocol/openid-connect/token
+            jwk-set-uri: http://localhost:9090/realms/bff-example/protocol/openid-connect/certs
+            user-info-uri: http://localhost:9090/realms/bff-example/protocol/openid-connect/userinfo
+            user-name-attribute: preferred_username
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: resource-api
+              uri: http://localhost:8081
+              predicates:
+                - Path=/api/**
+              filters:
+                - RemoveRequestHeader=Authorization
+                - TokenRelay=
+                - StripPrefix=1
