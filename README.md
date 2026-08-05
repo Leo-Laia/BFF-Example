@@ -158,19 +158,19 @@ Configuração conceitual:
 
 ```yaml
 spring:
-  cloud:
-    gateway:
-      routes:
-        - id: resource-api
-          uri: http://localhost:8081
-          predicates:
-            - Path=/api/**
-          filters:
-            - TokenRelay=
-            - StripPrefix=1
+  cloud.gateway.server.webflux:
+    routes:
+      - id: resource-api
+        uri: http://localhost:8081
+        predicates:
+          - Path=/api/**
+        filters:
+          - RemoveRequestHeader=Authorization
+          - TokenRelay=
+          - StripPrefix=1
 ```
 
-O `TokenRelay` recupera o access token associado ao usuário autenticado e adiciona o header `Authorization: Bearer` na chamada encaminhada. O `StripPrefix=1` remove `/api` antes da requisição chegar na Resource API. Assim, o browser chama `/api/messages`, mas a Resource API recebe `/messages`.
+O BFF descarta qualquer `Authorization` recebido do browser. O `TokenRelay` recupera o access token associado ao usuário autenticado e adiciona o seu próprio `Authorization: Bearer`. O `StripPrefix=1` remove `/api`, portanto o browser chama `/api/messages`, mas a Resource API recebe `/messages`.
 
 ### Front-end
 
@@ -289,7 +289,7 @@ GET http://localhost:8080/api/messages
 Resultado esperado nos request headers:
 
 ```text
-Cookie: SESSION=...
+Cookie: BFFSESSION=...
 ```
 
 E também:
@@ -317,7 +317,7 @@ POST http://localhost:8080/api/messages
 Resultado esperado:
 
 ```text
-Cookie: SESSION=...
+Cookie: BFFSESSION=...
 X-XSRF-TOKEN: ...
 Authorization: ausente
 ```
