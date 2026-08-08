@@ -5,6 +5,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
@@ -22,7 +23,10 @@ public class ConfiguracaoSeguranca {
     SecurityFilterChain filtroDeSeguranca(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(autorizacao -> autorizacao.anyRequest().authenticated())
+                .authorizeHttpRequests(autorizacao -> autorizacao
+                        .requestMatchers(HttpMethod.GET, "/messages").hasAuthority("SCOPE_messages:read")
+                        .requestMatchers(HttpMethod.POST, "/messages").hasAuthority("SCOPE_messages:write")
+                        .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(withDefaults()))
                 .build();
     }
