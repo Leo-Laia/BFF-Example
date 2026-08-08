@@ -57,13 +57,18 @@ button.perigo:hover:not(:disabled) {
   background: #fff0f1;
 }
 .barra-superior {
+  border-bottom: 1px solid #d7dee3;
+  background: #ffffff;
+}
+.conteudo-superior {
+  width: min(1120px, calc(100% - 48px));
+  min-height: 76px;
+  margin: 0 auto;
+  padding: 14px 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 76px;
-  padding: 14px max(24px, calc((100% - 1120px) / 2));
-  border-bottom: 1px solid #d7dee3;
-  background: #ffffff;
+  gap: 24px;
 }
 .barra-superior h1,
 .faixa-sessao h2,
@@ -218,8 +223,8 @@ main {
   font-weight: 700;
 }
 @media (max-width: 720px) {
-  .barra-superior {
-    padding-inline: 20px;
+  .conteudo-superior {
+    width: min(100% - 32px, 1120px);
   }
   main {
     width: min(100% - 32px, 1120px);
