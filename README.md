@@ -68,6 +68,17 @@ bff-token-handler-example/
 
 O projeto deve ser intencionalmente pequeno: duas aplicações Spring e um Keycloak pronto via Docker. A ideia não é ensinar Keycloak, React, banco de dados ou regras de negócio. A ideia é mostrar o fluxo de autenticação e encaminhamento de token pelo BFF.
 
+## Como Executar Localmente
+
+```bash
+docker compose up -d
+./gradlew clean test bootJar
+java -jar resource-api/build/libs/resource-api-0.0.1-SNAPSHOT.jar
+java -jar bff-gateway/build/libs/bff-gateway-0.0.1-SNAPSHOT.jar
+```
+
+No Windows PowerShell, use `.\gradlew.bat clean test bootJar`. Acesse `http://localhost:8080/` com `aluno` / `alga123`.
+
 ## Decisão Principal: Mesma Origem
 
 Para o MVP, o front-end deve ser servido pelo próprio BFF:
@@ -121,7 +132,7 @@ Responsabilidades:
 
 - validar JWT recebido no header `Authorization`;
 - exigir autenticação para os endpoints protegidos;
-- opcionalmente validar scopes;
+- validar scopes `messages:read` e `messages:write`;
 - não conhecer cookies, sessões ou detalhes do BFF.
 
 Não deve ter banco de dados, JPA, Flyway ou regra de negócio real.
@@ -269,7 +280,7 @@ fetch("/api/messages", {
     "X-XSRF-TOKEN": csrfToken
   },
   body: JSON.stringify({
-    text: "Nova mensagem"
+    texto: "Nova mensagem"
   })
 });
 ```
@@ -277,6 +288,15 @@ fetch("/api/messages", {
 Ponto importante: o token CSRF pode ser legível para o JavaScript quando a estratégia exigir isso. O cookie de sessão, por outro lado, deve continuar protegido contra leitura pelo JavaScript.
 
 ## Como Validar
+
+### Roteiro De Demonstração
+
+1. Acesse `http://localhost:8080/` e clique em **Entrar**.
+2. Faça login no Keycloak com `aluno` / `alga123`.
+3. Na tela do BFF, consulte a API e envie uma mensagem.
+4. No DevTools, confirme que o browser envia `Cookie: BFFSESSION=...`, mas não envia `Authorization`.
+5. Nos logs, compare a chegada no BFF sem `Authorization` com a chegada na Resource API com `Authorization: Bearer`.
+6. Chame `http://localhost:8081/messages` diretamente e confirme o `401`.
 
 ### DevTools: Browser Para BFF
 

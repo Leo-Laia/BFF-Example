@@ -10,8 +10,11 @@ public class UsuarioDaSessaoController {
 
     @GetMapping("/bff/user")
     UsuarioDaSessao consultarUsuario(@AuthenticationPrincipal OidcUser usuarioAutenticado) {
-        String nome = usuarioAutenticado.getFullName();
         String usuario = usuarioAutenticado.getClaimAsString("preferred_username");
+        String nome = usuarioAutenticado.getFullName();
+        if (nome == null || nome.isBlank()) {
+            nome = usuario;
+        }
         return new UsuarioDaSessao(nome, usuario);
     }
 }
