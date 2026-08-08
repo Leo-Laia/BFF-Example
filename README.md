@@ -1,22 +1,35 @@
-# BFF Token Handler Example
+# BFF Token Handler - exemplo guiado para o curso
 
-Exemplo didático de um **Backend for Frontend (BFF) Token Handler** usando Spring Security OAuth2 Client, Spring Cloud Gateway, TokenRelay, uma Resource API protegida e Keycloak como Authorization Server.
+Este repositório é um material de apoio para entender, na prática, como funciona o padrão **BFF Token Handler**.
 
-O objetivo é demonstrar um front-end que não gerencia tokens OAuth. O navegador não conhece `access_token`, não conhece `refresh_token`, não usa `localStorage` ou `sessionStorage` para autenticação e não envia `Authorization: Bearer` nas chamadas feitas pela aplicação. Quem cuida do login, da sessão, dos tokens e do encaminhamento autenticado para a API é o BFF.
+A ideia aqui não é montar uma aplicação completa de produção. É criar um exemplo pequeno, executável e fácil de observar, para responder uma dúvida bem comum:
+
+> Como fazer um front-end browser-based chamar uma API protegida sem guardar tokens OAuth no browser?
+
+## Comece Pelo Manual
+
+O melhor caminho para estudar este exemplo é seguir o manual com prints e evidências:
+
+**[Manual de execução e evidências](docs/evidencias-bff-token-handler/manual-execucao-evidencias.md)**
+
+Ele mostra o fluxo passo a passo, com telas reais, comandos, respostas HTTP e logs. Se você está vendo este assunto pela primeira vez, comece por ele. O README é só o mapa geral do projeto.
 
 ## Problema Que Este Projeto Demonstra
 
-Em aplicações browser-based, é comum surgir a dúvida: onde guardar tokens OAuth com segurança?
+Em aplicações front-end que rodam no browser, uma pergunta aparece cedo ou tarde:
 
-Este exemplo mostra uma alternativa em que o front-end deixa de ser o OAuth client. Em vez disso:
+> Onde eu guardo o `access_token` e o `refresh_token` com segurança?
 
-- o BFF atua como OAuth2 Client confidencial;
-- o browser mantém apenas uma sessão por cookie;
-- os tokens OAuth ficam associados à sessão no servidor;
-- o front chama apenas endpoints do BFF;
-- o BFF adiciona o `Authorization: Bearer` ao chamar a API protegida.
+Se o JavaScript guarda token em `localStorage`, `sessionStorage` ou algum estado da aplicação, um XSS pode tentar ler esse token e enviá-lo para fora. O BFF Token Handler muda a conversa:
 
-Esse padrão reduz a exposição dos tokens ao JavaScript do navegador. Ele não elimina todos os riscos de uma aplicação web, mas evita que um script malicioso consiga simplesmente ler e exfiltrar tokens armazenados no browser.
+- o front-end deixa de ser o cliente OAuth;
+- o browser mantém apenas um cookie de sessão;
+- o BFF faz login, mantém a sessão e guarda os tokens associados a ela;
+- o front chama apenas URLs relativas do próprio BFF;
+- o BFF usa o token para chamar a Resource API;
+- a Resource API continua protegida por JWT e scopes.
+
+Ou seja: o browser continua autenticado, mas não precisa conhecer o token OAuth.
 
 ## Arquitetura
 
@@ -45,169 +58,128 @@ Esse padrão reduz a exposição dos tokens ao JavaScript do navegador. Ele não
                                       +------------------+
 ```
 
-## Projetos
+O desenho está simplificado, mas representa a decisão principal do exemplo:
+
+- o browser fala com o BFF usando cookie;
+- o browser não manda `Authorization: Bearer`;
+- o BFF fala com o Keycloak durante o login;
+- o BFF fala com a Resource API usando `Authorization: Bearer`;
+- a Resource API valida JWT, audiência e scopes.
+
+## Projetos Deste Repositório
+
+Este repositório tem três partes principais:
+
+- `bff-gateway`: aplicação Spring Boot que serve o front-end, faz login OAuth2, mantém sessão por cookie e usa `TokenRelay`.
+- `resource-api`: API protegida que exige JWT válido e scopes `messages:read` / `messages:write`.
+- `keycloak`: realm de desenvolvimento local, com client confidencial e usuário de demonstração.
+
+Também existe um front-end estático em `bff-gateway/src/main/resources/static`. Ele é propositalmente simples: HTML, CSS e JavaScript puro, sem React e sem build separado.
+
+## Preparando O Ambiente Local
+
+Você precisa ter Docker e Java 21, ou uma toolchain compatível configurada no Gradle.
+
+Antes de subir os serviços, confira se estas portas estão livres:
 
 ```text
-bff-token-handler-example/
-├── docker-compose.yml
-├── keycloak/
-│   └── bff-example-realm.json
-├── bff-gateway/
-│   ├── src/main/java/
-│   └── src/main/resources/
-│       ├── application.yml
-│       └── static/
-│           ├── index.html
-│           └── app.js
-├── resource-api/
-│   ├── src/main/java/
-│   └── src/main/resources/
-│       └── application.yml
-└── README.md
+8080 -> BFF Gateway
+8081 -> Resource API
+9090 -> Keycloak
 ```
 
-O projeto deve ser intencionalmente pequeno: duas aplicações Spring e um Keycloak pronto via Docker. A ideia não é ensinar Keycloak, React, banco de dados ou regras de negócio. A ideia é mostrar o fluxo de autenticação e encaminhamento de token pelo BFF.
+No Windows PowerShell:
 
-## Como Executar Localmente
+```powershell
+docker compose up -d
+.\gradlew.bat clean test bootJar
+java -jar resource-api\build\libs\resource-api-0.0.1-SNAPSHOT.jar
+java -jar bff-gateway\build\libs\bff-gateway-0.0.1-SNAPSHOT.jar
+```
+
+Em Linux/macOS, o comando do Gradle muda:
 
 ```bash
-docker compose up -d
 ./gradlew clean test bootJar
-java -jar resource-api/build/libs/resource-api-0.0.1-SNAPSHOT.jar
-java -jar bff-gateway/build/libs/bff-gateway-0.0.1-SNAPSHOT.jar
 ```
 
-No Windows PowerShell, use `.\gradlew.bat clean test bootJar`. Acesse `http://localhost:8080/` com `aluno` / `alga123`.
-
-## Decisão Principal: Mesma Origem
-
-Para o MVP, o front-end deve ser servido pelo próprio BFF:
+Depois acesse:
 
 ```text
 http://localhost:8080/
-http://localhost:8080/bff/user
-http://localhost:8080/api/messages
 ```
 
-Isso mantém front-end e BFF na mesma origem. A demonstração fica mais simples porque evita CORS, evita servidor Vite/React separado e reduz distrações com configuração de cookies entre origens diferentes.
-
-Evite, no MVP:
+Credenciais do usuário de demonstração:
 
 ```text
-http://localhost:5173  -> Front-end
-http://localhost:8080  -> BFF
+Usuário: aluno
+Senha: alga123
 ```
 
-Portas diferentes criam origens diferentes. Subdomínios também ficam fora da primeira versão: eles podem ser considerados mesmo site em algumas regras de cookies, mas ainda são origens diferentes e adicionam CORS, domínio de cookie, `SameSite` e proteção de origem à conversa.
+## Por Que O Front E O BFF Ficam Na Mesma Origem?
 
-## Componentes
+Para fins didáticos, o front-end é servido pelo próprio BFF em `http://localhost:8080/`.
 
-### Authorization Server
+Isso evita misturar o assunto principal com CORS, subdomínios, configuração de domínio de cookie e detalhes de `SameSite`. Esses temas são importantes, mas não são o foco deste primeiro exemplo.
 
-O Keycloak deve subir por Docker com um realm importado automaticamente.
+Aqui queremos enxergar uma coisa com clareza:
 
-Configuração esperada:
+```text
+Browser -> cookie de sessão -> BFF -> Bearer token -> Resource API
+```
+
+## Componentes, Em Linguagem Simples
+
+### Keycloak
+
+É o Authorization Server. Ele autentica o usuário e emite os tokens para o BFF.
+
+Neste exemplo, ele já sobe com:
 
 - realm `bff-example`;
-- servidor em `http://localhost:9090`;
-- administração com `admin` / `admin`;
-- usuário de demonstração `aluno` / `alga123`;
-- client confidencial `bff-gateway` com secret `bff-gateway-secret`;
-- fluxo Authorization Code;
-- redirect URI `http://localhost:8080/login/oauth2/code/keycloak`;
-- configuração exclusiva para desenvolvimento local.
-
-### Resource API
-
-API Spring Boot mínima, atuando como OAuth2 Resource Server.
-
-Endpoints:
-
-```http
-GET /messages
-POST /messages
-```
-
-Responsabilidades:
-
-- validar JWT recebido no header `Authorization`;
-- exigir autenticação para os endpoints protegidos;
-- validar scopes `messages:read` e `messages:write`;
-- não conhecer cookies, sessões ou detalhes do BFF.
-
-Não deve ter banco de dados, JPA, Flyway ou regra de negócio real.
+- usuário `aluno`;
+- client confidencial `bff-gateway`;
+- scopes `messages:read` e `messages:write`.
 
 ### BFF Gateway
 
-Aplicação Spring Boot com Spring Security OAuth2 Client e Spring Cloud Gateway.
+É o meio de campo entre browser e APIs.
 
-Responsabilidades:
+Ele:
 
-- iniciar o login OAuth;
-- receber o callback;
-- manter a sessão do usuário por cookie;
-- manter os tokens OAuth fora do navegador;
-- encaminhar `/api/**` para a Resource API;
-- aplicar `TokenRelay`;
-- expor dados mínimos da sessão;
-- responder `401` em `/api/**` e `/bff/**` quando não houver autenticação;
-- realizar logout local com CSRF e invalidação explícita da sessão.
+- serve o HTML, CSS e JavaScript;
+- inicia o login no Keycloak;
+- recebe o callback OAuth2;
+- cria uma sessão por cookie;
+- busca o token associado à sessão;
+- encaminha `/api/messages` para a Resource API usando `TokenRelay`;
+- invalida a sessão no logout;
+- exige CSRF nas operações inseguras.
 
-Rotas esperadas:
+### Resource API
 
-```http
-GET  /oauth2/authorization/keycloak
-GET  /login/oauth2/code/keycloak
-GET  /bff/user
-GET  /bff/csrf
-GET  /api/messages
-POST /api/messages
-POST /logout
-```
+É a API protegida de verdade.
 
-Configuração conceitual:
+Ela não conhece a sessão do browser e não confia em cookie do BFF. Para responder, ela exige:
 
-```yaml
-spring:
-  cloud.gateway.server.webflux:
-    routes:
-      - id: resource-api
-        uri: http://localhost:8081
-        predicates:
-          - Path=/api/**
-        filters:
-          - RemoveRequestHeader=Authorization
-          - TokenRelay=
-          - StripPrefix=1
-```
-
-O BFF descarta qualquer `Authorization` recebido do browser. O `TokenRelay` recupera o access token associado ao usuário autenticado e adiciona o seu próprio `Authorization: Bearer`. O `StripPrefix=1` remove `/api`, portanto o browser chama `/api/messages`, mas a Resource API recebe `/messages`.
+- JWT válido;
+- audiência esperada;
+- `messages:read` para `GET /messages`;
+- `messages:write` para `POST /messages`.
 
 ### Front-end
 
-O front-end pode ser apenas `index.html` e `app.js`, servidos pelo BFF.
+O front-end só conversa com o BFF.
 
-Interface mínima:
-
-```text
-BFF Token Handler
-
-Status: não autenticado
-
-[Entrar]
-[Consultar usuário]
-[Consultar API protegida]
-[Enviar mensagem]
-[Sair]
-```
-
-O JavaScript deve chamar apenas o BFF:
+Ele chama:
 
 ```js
+fetch("/bff/user");
 fetch("/api/messages");
+fetch("/bff/csrf");
 ```
 
-O JavaScript não deve conter:
+E ele não faz isto:
 
 ```js
 localStorage.getItem("access_token");
@@ -219,202 +191,41 @@ fetch("/api/messages", {
 });
 ```
 
-Para login, use navegação normal:
+Esse é o ponto principal: o JavaScript não precisa carregar o token OAuth.
 
-```js
-window.location.href = "/oauth2/authorization/keycloak";
-```
+## O Que Você Deve Observar
 
-Se uma chamada protegida retornar `401`, o front deve exibir o estado de não autenticado e permitir que o usuário clique em entrar. Não é necessário iniciar o login automaticamente por `fetch`. Para preservar esse contrato, o BFF deve usar `HttpStatusServerEntryPoint(HttpStatus.UNAUTHORIZED)` em `/api/**` e `/bff/**`. O redirecionamento OAuth fica restrito à navegação explícita para `/oauth2/authorization/keycloak`.
+Ao executar o manual, procure estas evidências:
 
-## Fluxos Demonstrados
+- antes do login, chamadas protegidas retornam `401`;
+- depois do login, o browser tem cookie de sessão;
+- no DevTools, a chamada para o BFF não tem `Authorization`;
+- nos logs do BFF, aparece `Authorization vindo do browser? false`;
+- nos logs da Resource API, aparece `Authorization comeca com Bearer? true`;
+- `POST /api/messages` sem CSRF retorna `403`;
+- `POST /api/messages` com CSRF retorna `201`;
+- chamada direta para `http://localhost:8081/messages` retorna `401`;
+- depois do logout, a sessão deixa de autenticar.
 
-### Login
+## Limites Do Exemplo
 
-```text
-1. Usuário clica em Entrar.
-2. Browser acessa /oauth2/authorization/keycloak.
-3. BFF redireciona para o Authorization Server.
-4. Usuário autentica no Keycloak.
-5. Authorization Server retorna o authorization code.
-6. BFF troca o code pelos tokens.
-7. BFF associa os tokens à sessão.
-8. Browser recebe apenas cookie de sessão.
-9. Usuário volta para a página inicial.
-```
+Este projeto evita alguns assuntos de propósito:
 
-### Chamada Protegida
-
-```text
-1. Front chama GET /api/messages.
-2. Browser envia automaticamente o cookie de sessão.
-3. BFF encontra o access token associado à sessão.
-4. TokenRelay adiciona Authorization: Bearer.
-5. BFF encaminha a chamada para /messages na Resource API.
-6. Resource API valida o token.
-7. Resposta retorna ao front pelo BFF.
-```
-
-### Logout
-
-```text
-1. Front envia POST /logout com X-XSRF-TOKEN.
-2. BFF usa WebSessionServerLogoutHandler para invalidar a sessão local.
-3. Cookie de sessão deixa de ser válido.
-4. Novas chamadas protegidas retornam 401.
-```
-
-Logout global no Authorization Server pode ficar como evolução. Para o MVP, invalidar a sessão local já demonstra o comportamento principal.
-
-## CSRF
-
-Como o browser passa a autenticar usando cookies, uma operação insegura como `POST` deve exigir proteção contra CSRF.
-
-O front pode obter um token CSRF por endpoint ou cookie de apoio e enviá-lo no header:
-
-```js
-fetch("/api/messages", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "X-XSRF-TOKEN": csrfToken
-  },
-  body: JSON.stringify({
-    texto: "Nova mensagem"
-  })
-});
-```
-
-Ponto importante: o token CSRF pode ser legível para o JavaScript quando a estratégia exigir isso. O cookie de sessão, por outro lado, deve continuar protegido contra leitura pelo JavaScript.
-
-## Como Validar
-
-### Roteiro De Demonstração
-
-1. Acesse `http://localhost:8080/` e clique em **Entrar**.
-2. Faça login no Keycloak com `aluno` / `alga123`.
-3. Na tela do BFF, consulte a API e envie uma mensagem.
-4. No DevTools, confirme que o browser envia `Cookie: BFFSESSION=...`, mas não envia `Authorization`.
-5. Nos logs, compare a chegada no BFF sem `Authorization` com a chegada na Resource API com `Authorization: Bearer`.
-6. Chame `http://localhost:8081/messages` diretamente e confirme o `401`.
-
-### DevTools: Browser Para BFF
-
-Na aba Network, abra a chamada:
-
-```text
-GET http://localhost:8080/api/messages
-```
-
-Resultado esperado nos request headers:
-
-```text
-Cookie: BFFSESSION=...
-```
-
-E também:
-
-```text
-Authorization: ausente
-```
-
-Na aba Application:
-
-```text
-Local Storage: sem access_token e sem refresh_token
-Session Storage: sem access_token e sem refresh_token
-Cookies: cookie de sessão presente
-```
-
-### DevTools: POST Com CSRF
-
-Na chamada:
-
-```text
-POST http://localhost:8080/api/messages
-```
-
-Resultado esperado:
-
-```text
-Cookie: BFFSESSION=...
-X-XSRF-TOKEN: ...
-Authorization: ausente
-```
-
-### Logs: Chegada No BFF
-
-Para fins didáticos, o BFF pode registrar:
-
-```text
-BFF recebeu GET /api/messages
-Authorization vindo do browser? false
-Cookie de sessao presente? true
-```
-
-### Logs: Chegada Na Resource API
-
-Para fins didáticos, a Resource API pode registrar:
-
-```text
-Resource API recebeu GET /messages
-Authorization presente? true
-Authorization começa com Bearer? true
-```
-
-### Chamada Direta Na API
-
-Sem passar pelo BFF:
-
-```bash
-curl -i http://localhost:8081/messages
-```
-
-Resultado esperado:
-
-```text
-HTTP/1.1 401 Unauthorized
-```
-
-## Critérios De Aceite
-
-O exemplo estará concluído quando for possível demonstrar que:
-
-- o usuário consegue fazer login;
-- o navegador recebe cookie de sessão;
-- não existe token OAuth no `localStorage`, `sessionStorage` ou código JavaScript;
-- a chamada do navegador para o BFF não contém `Authorization: Bearer`;
-- a chamada do BFF para a API contém `Authorization: Bearer`;
-- a API retorna `401` quando chamada diretamente sem token;
-- uma operação `POST` exige token CSRF válido;
-- após o logout, a chamada protegida deixa de funcionar.
-
-## Fora Do Escopo Do MVP
-
-Para manter o exemplo pequeno:
-
-- integração com AlgaShop;
 - React;
 - banco de dados;
-- Redis;
-- sessões distribuídas;
+- Redis ou sessão distribuída;
 - múltiplas APIs;
-- descoberta de serviços;
+- CORS e subdomínios;
+- logout global no Keycloak;
 - refresh token demonstrado manualmente;
-- API composition;
-- autorização complexa;
-- deploy em produção;
-- subdomínios e CORS;
-- customização da tela de login;
-- logout global OIDC;
-- observabilidade completa.
+- regras de negócio reais.
 
-Também não deve existir rota genérica que aceite qualquer URL de destino. Um BFF deve encaminhar apenas para APIs, hosts e caminhos previamente conhecidos, evitando que ele seja usado para enviar tokens a destinos arbitrários.
+Essas coisas podem entrar em uma evolução futura. Aqui, o objetivo é entender bem o fluxo principal antes de colocar mais peças na mesa.
 
-## Resultado Esperado
+## Próximo Passo
 
-Este projeto deve servir como conteúdo de apoio para responder:
+Agora vá para o material guiado:
 
-> Como implementar um front-end que não gerencia tokens, deixando login, armazenamento dos tokens e chamadas às APIs sob responsabilidade do BFF?
+**[Abrir o manual de execução e evidências](docs/evidencias-bff-token-handler/manual-execucao-evidencias.md)**
 
-A resposta prática é este MVP: um front-end mínimo, servido pelo próprio BFF, autenticado por sessão e sem acesso aos tokens OAuth, com o Gateway encaminhando chamadas para uma API protegida usando `TokenRelay`.
+Ele é o melhor jeito de acompanhar o exemplo sem ficar só na teoria.
