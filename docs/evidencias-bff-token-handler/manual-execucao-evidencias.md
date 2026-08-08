@@ -4,13 +4,7 @@ Este manual é o caminho principal para estudar o exemplo.
 
 A ideia é você conseguir executar o projeto, olhar as telas, conferir alguns logs e entender, com calma, por que o browser não precisa guardar tokens OAuth.
 
-Validação usada para montar este material:
-
-```text
-Data: 2026-08-08 11:12 -03:00
-Branch: main
-Commit: 0343396
-```
+As telas e respostas deste manual foram capturadas em uma execução local do projeto. Elas servem como referência visual para você comparar com o seu ambiente.
 
 ## 1. Antes De Começar: O Que Estamos Tentando Provar?
 
@@ -53,6 +47,18 @@ O papel de cada um:
 - Resource API é a API protegida, que só aceita JWT válido.
 
 ## 3. Preparando O Ambiente
+
+Você precisa ter Docker e Java 21, ou uma toolchain compatível configurada no Gradle.
+
+Antes de começar, vale conferir se estas portas estão livres:
+
+```text
+8080 -> BFF Gateway
+8081 -> Resource API
+9090 -> Keycloak
+```
+
+Se alguma delas já estiver ocupada, o serviço correspondente pode falhar ao subir. Por exemplo: se a `9090` estiver em uso, o Keycloak do `docker compose` não vai conseguir iniciar corretamente.
 
 No PowerShell, dentro da raiz do projeto:
 
@@ -258,6 +264,34 @@ Evidências HTTP:
 POST /api/messages sem CSRF -> HTTP/1.1 403 Forbidden
 POST /api/messages com CSRF -> HTTP/1.1 201 Created
 ```
+
+### Opcional Avançado: Reproduzindo O 403 Sem CSRF
+
+Depois de fazer login, abra o DevTools do browser e vá na aba **Console**.
+
+Execute este `fetch` manualmente:
+
+```js
+fetch("/api/messages", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    texto: "Tentativa sem CSRF"
+  })
+}).then((resposta) => console.log(resposta.status));
+```
+
+Resultado esperado no console:
+
+```text
+403
+```
+
+Por que isso funciona como evidência?
+
+Porque o browser já tem o cookie de sessão depois do login, mas essa chamada não envia o header `X-XSRF-TOKEN`. Então o BFF entende que a operação insegura não está protegida contra CSRF e bloqueia a requisição antes de criar a mensagem.
 
 Por que CSRF aparece aqui?
 

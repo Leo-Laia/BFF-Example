@@ -78,7 +78,15 @@ Também existe um front-end estático em `bff-gateway/src/main/resources/static`
 
 ## Preparando O Ambiente Local
 
-Você precisa ter Docker e Java disponíveis.
+Você precisa ter Docker e Java 21, ou uma toolchain compatível configurada no Gradle.
+
+Antes de subir os serviços, confira se estas portas estão livres:
+
+```text
+8080 -> BFF Gateway
+8081 -> Resource API
+9090 -> Keycloak
+```
 
 No Windows PowerShell:
 
