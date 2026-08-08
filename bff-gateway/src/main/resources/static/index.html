@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Exemplo didático do padrão BFF Token Handler">
+  <title>BFF Token Handler</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="barra-superior">
+    <div>
+      <p class="identificador">AlgaWorks Lab</p>
+      <h1>BFF Token Handler</h1>
+    </div>
+    <span class="ambiente">Ambiente local</span>
+  </header>
+
+  <main>
+    <section class="faixa-sessao" aria-labelledby="titulo-sessao">
+      <div>
+        <p class="rotulo">Sessão do browser</p>
+        <h2 id="titulo-sessao">Estado da autenticação</h2>
+        <div class="estado-sessao" aria-live="polite">
+          <span id="indicador-sessao" class="indicador" data-estado="carregando"></span>
+          <div>
+            <strong id="texto-estado">Consultando sessão...</strong>
+            <p id="detalhe-usuario">Aguarde a resposta do BFF.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="acoes-sessao" aria-label="Ações da sessão">
+        <button id="botao-entrar" class="primario" type="button">Entrar</button>
+        <button id="botao-atualizar-sessao" type="button">Atualizar sessão</button>
+        <button id="botao-sair" class="perigo" type="button" disabled>Sair</button>
+      </div>
+    </section>
+
+    <section class="area-mensagens" aria-labelledby="titulo-mensagens">
+      <div class="cabecalho-secao">
+        <div>
+          <p class="rotulo">Resource API</p>
+          <h2 id="titulo-mensagens">Mensagens protegidas</h2>
+        </div>
+        <button id="botao-consultar-mensagens" type="button">Consultar API</button>
+      </div>
+
+      <form id="formulario-mensagem" class="formulario-mensagem">
+        <label for="texto-mensagem">Nova mensagem</label>
+        <div class="campo-com-acao">
+          <input id="texto-mensagem" name="texto" maxlength="160"
+                 placeholder="Escreva uma mensagem" autocomplete="off" required>
+          <button id="botao-enviar-mensagem" class="primario" type="submit" disabled>Enviar</button>
+        </div>
+      </form>
+
+      <p id="estado-mensagens" class="estado-vazio" aria-live="polite">
+        Consulte a API para carregar as mensagens.
+      </p>
+      <ul id="lista-mensagens" class="lista-mensagens" aria-label="Mensagens"></ul>
+    </section>
+
+    <section class="area-atividade" aria-labelledby="titulo-atividade">
+      <div class="cabecalho-secao">
+        <div>
+          <p class="rotulo">Browser para BFF</p>
+          <h2 id="titulo-atividade">Atividade recente</h2>
+        </div>
+        <button id="botao-limpar-atividade" type="button">Limpar</button>
+      </div>
+      <ol id="lista-atividade" class="lista-atividade" aria-live="polite"></ol>
+    </section>
+  </main>
+</body>
+</html>
